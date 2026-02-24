@@ -1,12 +1,26 @@
 const { google } = require("googleapis");
-const authorize = require("./gmailAuth");
 const analyzeEmails = require("./summarize");
 const axios = require("axios");
 const cron = require("node-cron");
 
-// ⚠️ 填写你的 Telegram 信息
-const TELEGRAM_TOKEN = "8634288666:AAEgRO0fKN-TLEDIpOZukYFD9iaQ5XbKwlc";
-const CHAT_ID = "8764404548";
+// ✅ 从环境变量读取 Telegram 信息
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
+
+// ✅ 从环境变量读取 Gmail 凭证
+const credentials = JSON.parse(process.env.GMAIL_CREDENTIALS);
+const token = JSON.parse(process.env.GMAIL_TOKEN);
+
+// 初始化 OAuth2
+const { client_secret, client_id, redirect_uris } = credentials.installed;
+
+const oAuth2Client = new google.auth.OAuth2(
+  client_id,
+  client_secret,
+  redirect_uris[0]
+);
+
+oAuth2Client.setCredentials(token);
 
 // 发送 Telegram 消息
 async function sendTelegram(message) {
@@ -21,8 +35,7 @@ async function sendTelegram(message) {
 
 async function listEmails() {
   try {
-    const auth = await authorize();
-    const gmail = google.gmail({ version: "v1", auth });
+    const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
 
     const res = await gmail.users.messages.list({
       userId: "me",
@@ -46,8 +59,10 @@ async function listEmails() {
       });
 
       const headers = msgData.data.payload.headers;
-      const subject = headers.find(h => h.name === "Subject")?.value || "No Subject";
-      const from = headers.find(h => h.name === "From")?.value || "Unknown Sender";
+      const subject =
+        headers.find(h => h.name === "Subject")?.value || "No Subject";
+      const from =
+        headers.find(h => h.name === "From")?.value || "Unknown Sender";
 
       emailText += `From: ${from}\nSubject: ${subject}\n\n`;
 
@@ -56,8 +71,8 @@ async function listEmails() {
         userId: "me",
         id: msg.id,
         requestBody: {
-          removeLabelIds: ["UNREAD"]
-        }
+          removeLabelIds: ["UNREAD"],
+        },
       });
     }
 
@@ -68,17 +83,16 @@ async function listEmails() {
     await sendTelegram(finalMessage);
 
     console.log("AI report sent to Telegram.");
-
   } catch (error) {
     console.error("Error:", error.message);
   }
 }
 
-// 每天早上 8:00 自动运行
+// 每天早上 8:00 运行（服务器时间）
 cron.schedule("0 8 * * *", () => {
   console.log("Running morning AI email agent...");
   listEmails();
 });
 
-// 启动时立即运行一次（用于测试）
+// 启动时立即运行一次
 listEmails();
