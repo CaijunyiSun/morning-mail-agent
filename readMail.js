@@ -1,4 +1,4 @@
-console.log("REFRESH TOKEN:", process.env.GOOGLE_REFRESH_TOKEN);
+
 console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
 const { google } = require("googleapis");
 const analyzeEmails = require("./summarize");
