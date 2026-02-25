@@ -20,7 +20,6 @@ oAuth2Client.setCredentials({
   refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
 });
 
-oAuth2Client.setCredentials(token);
 
 // 发送 Telegram 消息
 async function sendTelegram(message) {
