@@ -7,18 +7,17 @@ const cron = require("node-cron");
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
 
-// ✅ 从环境变量读取 Gmail 凭证
-const credentials = JSON.parse(process.env.GMAIL_CREDENTIALS);
-const token = JSON.parse(process.env.GMAIL_TOKEN);
-
-// 初始化 OAuth2
-const { client_secret, client_id, redirect_uris } = credentials.installed;
-
+// ✅ 从环境变量读取 Gmail OAuth 信息
 const oAuth2Client = new google.auth.OAuth2(
-  client_id,
-  client_secret,
-  redirect_uris[0]
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
 );
+
+// 设置 refresh token
+oAuth2Client.setCredentials({
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+});
 
 oAuth2Client.setCredentials(token);
 
